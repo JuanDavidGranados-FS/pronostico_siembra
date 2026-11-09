@@ -121,14 +121,17 @@ pronostico_siembra/
 
 ## Versión web (sin instalar)
 
-La carpeta [`web/`](web) es una versión liviana que se abre desde el navegador. El **mismo motor en Python** corre dentro del
-dispositivo con [Pyodide](https://pyodide.org) (WebAssembly), así que no necesita servidor y ningún dato sale del celular. Se publica
-gratis en **Vercel**, y con un **código QR** cualquier persona la prueba al instante.
+La carpeta [`web/`](web) es **la misma aplicación** (7 pestañas, mismo diseño, asistente, historial, exportes), pero en el navegador.
+El código Python del proyecto corre dentro del dispositivo con [Pyodide](https://pyodide.org) (WebAssembly), así que no necesita
+servidor y ningún dato sale del celular. Se publica gratis en **Vercel**, y con un **código QR** cualquier persona la prueba al
+instante.
 
 <p align="center">
-  <img src="docs/img/web_inicio.png" alt="Versión web: inicio" width="30%">
+  <img src="docs/img/web_escritorio.png" alt="Versión web en el PC" width="58%">
   &nbsp;
-  <img src="docs/img/web_resultados.png" alt="Versión web: resultados" width="30%">
+  <img src="docs/img/web_inicio.png" alt="Versión web en el celular: inicio" width="17%">
+  &nbsp;
+  <img src="docs/img/web_resultados.png" alt="Versión web en el celular: resultados" width="17%">
 </p>
 
 Pasos para publicarla y generar el QR: **[docs/web.md](docs/web.md)**.

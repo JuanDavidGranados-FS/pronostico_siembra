@@ -1,7 +1,7 @@
 """Empaqueta el motor de simulación para la versión web.
 
-Crea `web/siembra.zip` con el código Python que corre en el navegador (Pyodide): `src/dominio`, la parte de
-`src/aplicacion` que usa la simulación y `web/motor.py`. Ejecútalo cada vez que cambies ese código:
+Crea `web/siembra.zip` con el código Python que corre en el navegador (Pyodide): `src/dominio`, `src/aplicacion`,
+la parte de `src/infraestructura` que no depende de PostgreSQL y `web/motor.py`. Ejecútalo cada vez que cambies ese código:
 
     python web/empaquetar.py
 
@@ -17,7 +17,9 @@ from typing import Dict, List
 
 RAIZ = Path(__file__).resolve().parent.parent
 DESTINO = RAIZ / "web" / "siembra.zip"
-APLICACION = ["__init__.py", "orquestador.py", "explicador.py", "validador.py", "asistente.py"]
+# Lo que la web usa de cada capa (sin PostgreSQL, configuración, logs ni la interfaz de escritorio).
+INFRAESTRUCTURA = ["__init__.py", "repositorio_memoria.py", "adaptador_json.py", "lector_historico.py", "graficas.py",
+                   "exportador.py"]
 
 
 def archivos() -> Dict[str, Path]:
@@ -25,9 +27,12 @@ def archivos() -> Dict[str, Path]:
     mapa: Dict[str, Path] = {"src/__init__.py": RAIZ / "src" / "__init__.py"}
     for f in sorted((RAIZ / "src" / "dominio").glob("*.py")):
         mapa[f"src/dominio/{f.name}"] = f
-    for nombre in APLICACION:
-        mapa[f"src/aplicacion/{nombre}"] = RAIZ / "src" / "aplicacion" / nombre
+    for f in sorted((RAIZ / "src" / "aplicacion").glob("*.py")):
+        mapa[f"src/aplicacion/{f.name}"] = f
+    for nombre in INFRAESTRUCTURA:
+        mapa[f"src/infraestructura/{nombre}"] = RAIZ / "src" / "infraestructura" / nombre
     mapa["motor.py"] = RAIZ / "web" / "motor.py"
+    mapa["docs/integration_guide.md"] = RAIZ / "docs" / "integration_guide.md"  # se muestra en Ayuda
     return mapa
 
 

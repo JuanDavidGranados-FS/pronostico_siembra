@@ -46,10 +46,15 @@ Compatibilidad con Pydroid 3 (en `main.py`): el comentario `#Pydroid run tkinter
 `msgcat` o una versión mínima antes de que ttkbootstrap la use. Los errores fatales se guardan en `error.txt`.
 
 ## Versión web
-`web/` reutiliza `src/dominio` y la parte de `src/aplicacion` que usa la simulación. `web/empaquetar.py` los mete en `web/siembra.zip`
-junto con `web/motor.py` (el puente). En el navegador, `motor.worker.js` carga Pyodide y numpy desde jsDelivr, descomprime el zip y
-llama a `motor.simular()`, que devuelve JSON. La interfaz (`app.js`) dibuja con Chart.js. No hay servidor ni persistencia. Detalle y
-publicación en Vercel: `docs/web.md`.
+`web/` replica la interfaz de escritorio en HTML/JS (`app.js` usa los mismos nombres de páginas y widgets que `src/presentacion`).
+El código Python corre en el navegador con Pyodide. `web/empaquetar.py` mete en `web/siembra.zip` `src/dominio`, `src/aplicacion`,
+la parte de `src/infraestructura` que no depende de PostgreSQL (repositorios en memoria, gráficas, exportador, lector de históricos y
+adaptador JSON), la guía de integración y `web/motor.py`.
+
+`motor.py` hace el papel de `main.py` + `VentanaPrincipal`: crea el orquestador, los gestores y los repositorios en memoria, y expone
+cada operación como una función que recibe y devuelve JSON. `motor.worker.js` la llama desde un Web Worker. Después de cada cambio,
+`instantanea()` serializa los repositorios y la página los guarda en `localStorage`. Al abrirla de nuevo, `restaurar()` los recupera.
+matplotlib y openpyxl se cargan bajo demanda. Detalle y publicación en Vercel: `docs/web.md`.
 
 ## Pruebas
 `pytest --cov` (cobertura ≈ 96 %, sin el repositorio PostgreSQL). Las pruebas de interfaz necesitan pantalla (`xvfb-run`) y se omiten si no la hay. Para probar el modo celular: `SIEMBRA_MOVIL=1 xvfb-run -a -s "-screen 0 1080x2340x24" pytest tests/test_ui.py`.

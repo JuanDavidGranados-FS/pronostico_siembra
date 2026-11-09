@@ -1,28 +1,36 @@
 # Versión web (Vercel + código QR)
 
-La carpeta `web/` es una versión liviana de Siembrate que se abre desde el navegador, sin instalar nada. Sirve para que cualquier
-persona la pruebe en su celular o PC escaneando un código QR.
+La carpeta `web/` es la **misma aplicación de escritorio**, pero en el navegador y sin instalar nada. Tiene las mismas 7 pestañas,
+el mismo diseño, el asistente, el recorrido guiado y el tema claro/oscuro. Sirve para que cualquier persona la pruebe en su celular o
+PC escaneando un código QR.
 
 ## Cómo funciona
 
 - Es una página **estática** (HTML, CSS y JavaScript). En Vercel no hay servidor que mantener y es gratis.
-- El cálculo lo hace el **mismo código Python del proyecto** (`src/dominio` y `src/aplicacion`). Corre **dentro del navegador** con
-  [Pyodide](https://pyodide.org) (Python compilado a WebAssembly) y numpy.
-- Ningún dato sale del dispositivo: no hay base de datos ni envíos a internet, aparte de descargar la página y Pyodide.
+- Todo el cálculo lo hace el **mismo código Python del proyecto**: `src/dominio`, `src/aplicacion` y los repositorios, gráficas y
+  exportes de `src/infraestructura`. Corre **dentro del navegador** con [Pyodide](https://pyodide.org) (Python compilado a
+  WebAssembly).
+- Las gráficas son las mismas de escritorio (matplotlib). matplotlib se descarga solo la primera vez que se abre una gráfica o se
+  exporta un archivo; openpyxl se descarga solo para Excel.
+- El historial, las configuraciones de relevancia, el diario de campo y las matrices guardadas se guardan **en el propio
+  dispositivo** (almacenamiento del navegador). Ningún dato sale de él.
 - La primera visita tarda unos segundos mientras se descarga Python. El navegador lo guarda, así que las siguientes cargan rápido.
 
 | Archivo | Para qué sirve |
 |---|---|
-| `web/index.html`, `estilos.css`, `app.js` | Interfaz: Inicio, Datos, Resultados (gráficas, comparación, riesgos, temporadas) y asistente. |
-| `web/motor.worker.js` | Carga Pyodide y el motor en segundo plano, para que la pantalla no se congele mientras simula. |
-| `web/motor.py` | Puente entre la página y el orquestador: arma los datos y devuelve el resultado en JSON. |
-| `web/siembra.zip` | El código Python que corre en el navegador. **Se genera** con `web/empaquetar.py`. |
-| `web/vendor/chart.umd.min.js` | Chart.js 4.6.1 (licencia MIT) para las gráficas. |
+| `web/index.html`, `estilos.css`, `app.js` | Interfaz: réplica de `src/presentacion`. Las páginas y los widgets llevan los mismos nombres (`Seccion`, `Segmentado`, `Deslizador`…). |
+| `web/motor.worker.js` | Carga Pyodide en segundo plano para que la pantalla no se congele. Carga matplotlib y openpyxl solo cuando se necesitan. |
+| `web/motor.py` | Hace el papel de `main.py` + la ventana: arma el contexto (orquestador, gestores, repositorios) y ofrece las operaciones de las páginas. |
+| `web/siembra.zip` | El código Python que corre en el navegador (más la guía de integración). **Se genera** con `web/empaquetar.py`. |
 | `web/manifest.webmanifest`, `icono*.png` | Permite instalarla en la pantalla de inicio del celular. |
 | `web/vercel.json`, `.vercelignore` | Configuración de Vercel (sitio estático, sin compilación). |
 
-Comparada con la app de escritorio, la versión web no tiene historial, exportes, matrices de Márkov editables ni carga de JSON. Usa
-los valores sugeridos de esas partes.
+Diferencias con la app de escritorio, por ser una página web:
+
+- **Datos de un simulador (JSON):** se cargan con el botón «Cargar JSON». No hay carpeta de entrada vigilada.
+- **Base de datos:** en lugar de PostgreSQL se usa el almacenamiento del navegador, con las últimas 40 simulaciones. Si se borran los
+  datos del navegador, se borra el historial.
+- **Ventanas aparte** (comparación, renombrar): se muestran sobre la misma página.
 
 ## Publicarla en Vercel (una sola vez)
 

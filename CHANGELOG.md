@@ -3,6 +3,24 @@
 Todos los cambios relevantes del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
+## [2.0.0] - 2026-11-09
+
+### Cambiado
+- **La versión web ahora es igual a la app de escritorio.** Tiene las mismas 7 pestañas (Inicio, Datos, Relevancia, Simulación,
+  Resultados, Historial, Ayuda), el mismo diseño y los mismos widgets, el asistente lateral, el recorrido guiado, el semáforo y el
+  tema claro/oscuro. En el celular se reacomoda igual que el modo celular de escritorio.
+- `web/motor.py` ahora arma el contexto completo: orquestador, gestores de historial y relevancia, y repositorios en memoria que se
+  guardan en el navegador.
+- Las gráficas son las de escritorio (matplotlib en el navegador), en lugar de Chart.js.
+
+### Agregado (web)
+- Relevancia completa: Ley del Mínimo, histórico CSV/Excel, modo experto (AHP), diario de campo y configuraciones guardadas
+  (guardar, cargar, duplicar, eliminar, descargar e importar).
+- Datos completos: clima con tipo de distribución, matrices de Márkov editables (normalizar, agregar o quitar estados, guardar y
+  cargar), eventos raros y plan de temporadas.
+- Historial: buscar, abrir, comparar dos, reutilizar la configuración, renombrar y eliminar.
+- Exportes a PDF, Excel, CSV, JSON y PNG, y carga de JSON de un simulador.
+
 ## [1.2.0] - 2026-11-09
 
 ### Agregado

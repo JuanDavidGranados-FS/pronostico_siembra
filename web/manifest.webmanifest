@@ -1,6 +1,6 @@
 {
-  "name": "Siembrate · Pronóstico de siembra",
-  "short_name": "Siembrate",
+  "name": "Siembra · Pronóstico de siembra",
+  "short_name": "Siembra",
   "description": "Recomienda la fecha óptima de siembra con modelos probabilísticos. Corre en tu dispositivo.",
   "lang": "es",
   "start_url": "./",
