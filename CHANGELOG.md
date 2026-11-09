@@ -15,6 +15,9 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 - Guía `docs/web.md`: publicación en Vercel y código QR.
 
 ### Corregido
+- La simulación podía quedarse trabada en la app de escritorio. Si el recolector de basura de Python liberaba objetos de Tk
+  (por ejemplo, tras cambiar el tema) dentro del hilo de cálculo, cada liberación esperaba al bucle de Tk. Ahora se limpian en el
+  hilo principal y el recolector se pausa mientras se simula. Esto también causaba fallos intermitentes en las pruebas de interfaz.
 - La prueba de reproducibilidad CV-03 fallaba a veces porque comparaba el nombre por defecto, que incluye la hora.
 
 ## [1.1.0] - 2026-11-09

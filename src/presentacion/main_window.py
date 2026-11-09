@@ -1,6 +1,7 @@
 """Ventana principal: barra superior, páginas una a la vez, panel del asistente, avisos y ejecución en segundo plano."""
 from __future__ import annotations
 
+import gc
 import glob
 import logging
 import os
@@ -241,6 +242,11 @@ class VentanaPrincipal(ttk.Window):
 
         if pg is not None and hasattr(pg, "al_iniciar"):
             pg.al_iniciar()
+        # Los objetos de Tk (variables, imágenes) solo se pueden liberar en el hilo principal. Si el recolector de
+        # basura los libera dentro del hilo de cálculo, cada uno espera al bucle de Tk y la simulación se traba.
+        # Se limpia aquí y se pausa el recolector hasta que llegue el resultado (ver _consultar_cola).
+        gc.collect()
+        gc.disable()
         threading.Thread(target=trabajo, daemon=True).start()
 
     def _consultar_cola(self) -> None:
@@ -252,6 +258,7 @@ class VentanaPrincipal(ttk.Window):
                     pg.al_progreso(*carga)
                     continue
                 self.ejecutando = False
+                gc.enable()
                 if pg is not None:
                     pg.al_terminar()
                 if tipo == "listo":
