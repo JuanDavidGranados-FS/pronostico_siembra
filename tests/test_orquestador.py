@@ -47,7 +47,8 @@ def test_cv03_reproducibilidad():
     o = OrquestadorSimulacion()
     a, b = o.ejecutar_simulacion(base()), o.ejecutar_simulacion(base())
     da, db = a.a_dict(), b.a_dict()
-    da.pop("duracion_segundos"), db.pop("duracion_segundos")  # el tiempo de cálculo varía entre ejecuciones
+    for d in (da, db):  # metadatos que dependen del reloj, no del cálculo
+        d.pop("duracion_segundos"), d.pop("nombre")
     assert da == db
     c = o.ejecutar_simulacion(base(semilla=43))
     assert c.kpi.valor != a.kpi.valor
