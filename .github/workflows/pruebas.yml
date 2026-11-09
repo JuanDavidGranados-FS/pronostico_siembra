@@ -1,0 +1,35 @@
+name: Pruebas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Instalar Tkinter y pantalla virtual
+        run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Pruebas (escritorio)
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" pytest -q
+
+      - name: Pruebas de interfaz (modo celular)
+        env:
+          SIEMBRA_MOVIL: "1"
+        run: xvfb-run -a -s "-screen 0 1080x2340x24" pytest -q tests/test_ui.py
