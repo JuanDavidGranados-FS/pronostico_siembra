@@ -218,3 +218,24 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---------------------------------------------------------------------------
+# Propios del proyecto
+# ---------------------------------------------------------------------------
+# Archivos que genera la aplicación al ejecutarse
+logs/
+error.txt
+entrada/
+pronostico_siembra*.pdf
+pronostico_siembra*.xlsx
+pronostico_siembra*.csv
+pronostico_siembra*.png
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Empaquetado (PyInstaller)
+*.spec

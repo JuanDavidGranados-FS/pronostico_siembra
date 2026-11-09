@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: pronostico_siembra_db
+    environment:
+      POSTGRES_DB: pronostico_siembra
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+volumes:
+  pgdata:
