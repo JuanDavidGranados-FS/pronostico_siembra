@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Siembrate · ¿Cuándo es mejor sembrar?</title>
+  <meta name="description" content="Recomienda la fecha óptima de siembra con cadenas de Márkov, simulación de Montecarlo, Poisson y Galton-Watson. Corre en tu dispositivo.">
+  <meta name="theme-color" content="#1f7a4d">
+  <link rel="icon" href="icono.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icono-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <header class="barra">
+    <a class="marca" href="#inicio" data-ir="inicio"><span class="logo" aria-hidden="true">✿</span> Siembrate</a>
+    <button class="btn fantasma pequeno" id="btn-asistente" type="button" disabled>✦ Preguntar</button>
+  </header>
+
+  <!-- Carga del motor (Python en el navegador) -->
+  <div class="carga" id="carga" role="status" aria-live="polite">
+    <div class="carga-caja">
+      <div class="logo grande" aria-hidden="true">✿</div>
+      <p class="carga-titulo">Preparando Siembrate</p>
+      <p class="carga-texto" id="carga-texto">Iniciando…</p>
+      <div class="barra-progreso"><div id="carga-barra"></div></div>
+      <p class="nota">La primera vez tarda unos segundos: se descarga el motor de simulación para que corra en tu dispositivo.</p>
+    </div>
+  </div>
+
+  <main>
+    <!-- ============================ INICIO ============================ -->
+    <section class="vista activa" id="vista-inicio" aria-labelledby="t-inicio">
+      <h1 id="t-inicio">¿Cuándo es mejor sembrar?</h1>
+      <p class="sub">Responde en unos pasos y te recomendamos una fecha, con el motivo y el riesgo.</p>
+      <div class="acciones">
+        <button class="btn primario" type="button" id="btn-sugeridos" disabled>Probar con valores sugeridos</button>
+        <button class="btn" type="button" data-ir="datos" disabled>Elegir mis datos</button>
+      </div>
+      <div class="rejilla-modelos">
+        <article class="tarjeta mini"><h3>Cadenas de Márkov</h3><p>Cómo cambia la salud y el crecimiento de la planta cada semana.</p></article>
+        <article class="tarjeta mini"><h3>Montecarlo</h3><p>Miles de climas posibles para cada fecha candidata.</p></article>
+        <article class="tarjeta mini"><h3>Poisson</h3><p>Plagas, heladas y lluvias intensas: eventos raros y su pérdida.</p></article>
+        <article class="tarjeta mini"><h3>Galton-Watson</h3><p>Plan de varias temporadas y alerta si el cultivo se extingue.</p></article>
+      </div>
+      <p class="nota centro">🔒 La simulación corre en tu dispositivo: no se envía ningún dato.</p>
+    </section>
+
+    <!-- ============================ DATOS ============================ -->
+    <section class="vista" id="vista-datos" aria-labelledby="t-datos">
+      <button class="volver" type="button" data-ir="inicio">← Inicio</button>
+      <h1 id="t-datos">Tus datos</h1>
+      <p class="sub">Todo trae valores sugeridos. Abre una sección solo si quieres cambiar algo.</p>
+      <form id="form" novalidate>
+        <details class="seccion" open>
+          <summary>Cultivo <span class="resumen" id="r-cultivo"></span></summary>
+          <div class="campos">
+            <label class="campo ancho">Qué vas a sembrar
+              <select name="cultivo" id="sel-cultivo"></select>
+            </label>
+            <label class="campo">Días de crecimiento<input name="dias_crecimiento" inputmode="numeric"></label>
+            <label class="campo">Rendimiento base (t/ha)<input name="rendimiento_base" inputmode="decimal"></label>
+            <label class="campo">Temperatura mínima (°C)<input name="temp_min" inputmode="decimal"></label>
+            <label class="campo">Temperatura máxima (°C)<input name="temp_max" inputmode="decimal"></label>
+            <label class="campo">Agua que pide (mm/día)<input name="requerimiento_agua" inputmode="decimal"></label>
+            <label class="campo">Resistencia a plagas (0–100)<input name="resistencia_plagas" inputmode="decimal"></label>
+          </div>
+        </details>
+
+        <details class="seccion">
+          <summary>Fecha y suelo <span class="resumen" id="r-suelo"></span></summary>
+          <div class="campos">
+            <label class="campo ancho">Desde qué fecha buscar<input type="date" name="fecha"></label>
+            <label class="campo">pH del suelo (0–14)<input name="ph" inputmode="decimal"></label>
+            <label class="campo">Riego (mm/día)<input name="agua" inputmode="decimal"></label>
+            <label class="campo">Nitrógeno (kg/ha)<input name="nitrogeno" inputmode="decimal"></label>
+            <label class="campo">Fósforo (kg/ha)<input name="fosforo" inputmode="decimal"></label>
+            <label class="campo">Potasio (kg/ha)<input name="potasio" inputmode="decimal"></label>
+            <label class="campo">Resistencia de la semilla (0–100)<input name="resistencia" inputmode="decimal"></label>
+          </div>
+        </details>
+
+        <details class="seccion">
+          <summary>Clima <span class="resumen">Cómo puede variar</span></summary>
+          <div class="campos">
+            <p class="ayuda ancho">Temperatura (°C) · distribución normal</p>
+            <label class="campo">Media<input name="temperatura.media" inputmode="decimal"></label>
+            <label class="campo">Desviación<input name="temperatura.std" inputmode="decimal"></label>
+            <p class="ayuda ancho">Lluvia (mm/día) · distribución triangular</p>
+            <label class="campo">Mínimo<input name="lluvia.min" inputmode="decimal"></label>
+            <label class="campo">Más probable<input name="lluvia.moda" inputmode="decimal"></label>
+            <label class="campo">Máximo<input name="lluvia.max" inputmode="decimal"></label>
+            <p class="ayuda ancho">Humedad (%) · distribución uniforme</p>
+            <label class="campo">Mínimo<input name="humedad.min" inputmode="decimal"></label>
+            <label class="campo">Máximo<input name="humedad.max" inputmode="decimal"></label>
+          </div>
+        </details>
+
+        <details class="seccion">
+          <summary>Qué te importa más <span class="resumen">Factor de Relevancia</span></summary>
+          <div class="campos" id="pesos"></div>
+        </details>
+
+        <details class="seccion">
+          <summary>Simulación <span class="resumen" id="r-sim"></span></summary>
+          <div class="campos">
+            <label class="campo">Escenarios a simular
+              <select name="iteraciones">
+                <option value="1000">1 000 (rápido)</option>
+                <option value="3000" selected>3 000 (recomendado)</option>
+                <option value="10000">10 000 (más preciso)</option>
+              </select>
+            </label>
+            <label class="campo">Temporadas a planear
+              <select name="temporadas"></select>
+            </label>
+          </div>
+        </details>
+
+        <p class="error" id="error-datos" role="alert" hidden></p>
+        <button class="btn primario ancho-total" type="submit">Calcular fecha óptima</button>
+      </form>
+    </section>
+
+    <!-- ========================== SIMULANDO ========================== -->
+    <section class="vista" id="vista-simulando" aria-live="polite">
+      <div class="simulando">
+        <div class="logo grande girando" aria-hidden="true">✿</div>
+        <h2>Simulando…</h2>
+        <p class="sub" id="sim-texto">Probando fechas de siembra</p>
+        <div class="barra-progreso"><div id="sim-barra"></div></div>
+      </div>
+    </section>
+
+    <!-- ========================== RESULTADOS ========================== -->
+    <section class="vista" id="vista-resultados" aria-labelledby="t-res">
+      <button class="volver" type="button" data-ir="datos">← Cambiar datos</button>
+      <p class="sub" id="res-cultivo"></p>
+      <article class="tarjeta destacada">
+        <span class="pastilla" id="res-pastilla"></span>
+        <h1 id="t-res" class="fecha"></h1>
+        <p id="res-justificacion"></p>
+        <details class="porque">
+          <summary>¿Por qué esta fecha?</summary>
+          <ul id="res-detalle"></ul>
+        </details>
+      </article>
+
+      <div class="metricas">
+        <article class="tarjeta metrica"><span class="rotulo">KPI</span><strong id="m-kpi"></strong><span class="nota">Puntaje de la fecha (más alto es mejor).</span></article>
+        <article class="tarjeta metrica"><span class="rotulo">Probabilidad de éxito</span><strong id="m-exito"></strong><span class="nota">Escenarios que llegan a buena cosecha.</span></article>
+        <article class="tarjeta metrica"><span class="rotulo">Cosecha esperada</span><strong id="m-cosecha"></strong><span class="nota">t/ha, en 8 de cada 10 casos.</span></article>
+      </div>
+
+      <h2 class="titulo-seccion">¿Quieres ver más?</h2>
+      <div class="pestanas" role="tablist" id="pestanas">
+        <button role="tab" data-tab="graficas" aria-selected="true">Gráficas</button>
+        <button role="tab" data-tab="comparacion">Comparación</button>
+        <button role="tab" data-tab="riesgos">Riesgos</button>
+        <button role="tab" data-tab="temporadas" id="tab-temporadas">Temporadas</button>
+      </div>
+
+      <div class="panel tarjeta" id="panel-graficas">
+        <div class="chips" id="chips-graficas"></div>
+        <div class="chips secundarios" id="chips-cadenas" hidden></div>
+        <div class="lienzo"><canvas id="grafica" aria-label="Gráfica de resultados" role="img"></canvas></div>
+        <p class="nota" id="nota-grafica"></p>
+      </div>
+      <div class="panel tarjeta" id="panel-comparacion" hidden></div>
+      <div class="panel tarjeta" id="panel-riesgos" hidden></div>
+      <div class="panel tarjeta" id="panel-temporadas" hidden></div>
+
+      <div class="acciones">
+        <button class="btn primario" type="button" id="btn-otra">Simular de nuevo</button>
+        <button class="btn" type="button" data-ir="datos">Cambiar datos</button>
+      </div>
+      <p class="nota">Recomendación informativa: no reemplaza el criterio de un agrónomo. Los valores sugeridos no están calibrados para un lugar concreto.</p>
+    </section>
+  </main>
+
+  <!-- ============================ ASISTENTE ============================ -->
+  <div class="hoja" id="hoja" hidden>
+    <div class="hoja-fondo" data-cerrar></div>
+    <div class="hoja-caja" role="dialog" aria-modal="true" aria-labelledby="t-asistente">
+      <div class="hoja-cab">
+        <h2 id="t-asistente">✦ Asistente</h2>
+        <button class="btn fantasma pequeno" type="button" data-cerrar aria-label="Cerrar">✕</button>
+      </div>
+      <div class="chat" id="chat"><p class="nota">Pregunta lo que quieras: respondo en pocas líneas y sin internet.</p></div>
+      <div class="chips" id="sugerencias"></div>
+      <form class="preguntar" id="form-preguntar">
+        <input id="pregunta" placeholder="Escribe tu pregunta…" autocomplete="off" aria-label="Tu pregunta">
+        <button class="btn primario" type="submit">Enviar</button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="pie">
+    Siembrate · Proyecto académico, Ingeniería de Sistemas, Universidad ECCI ·
+    <a href="https://github.com/JuanDavidGranados-FS/pronostico_siembra" target="_blank" rel="noopener">Código en GitHub</a>
+  </footer>
+
+  <script src="vendor/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

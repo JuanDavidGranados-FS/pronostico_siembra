@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#1f7a4d"/>
+  <g fill="#ffffff" transform="translate(256 256)">
+    <g id="p"><ellipse cx="0" cy="-112" rx="54" ry="92"/></g>
+    <use href="#p" transform="rotate(72)"/>
+    <use href="#p" transform="rotate(144)"/>
+    <use href="#p" transform="rotate(216)"/>
+    <use href="#p" transform="rotate(288)"/>
+    <circle r="46" fill="#1f7a4d"/>
+    <circle r="28" fill="#ffffff"/>
+  </g>
+</svg>
