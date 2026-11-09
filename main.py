@@ -1,9 +1,11 @@
+#Pydroid run tkinter
 """Punto de entrada: compone las capas (PostgreSQL o memoria) y lanza la aplicación de escritorio."""
 from __future__ import annotations
 
 import logging
 import os
 import sys
+import tkinter
 
 from src.aplicacion.contexto import Contexto
 from src.aplicacion.diagnostico import Diagnostico
@@ -17,6 +19,9 @@ from src.infraestructura import repositorio_memoria as mem
 from src.infraestructura.preferencias import Preferencias, carpeta_usuario
 
 log = logging.getLogger("main")
+
+# Archivo donde se guarda el error si la app se cae (útil en Pydroid, que no lo muestra).
+ARCHIVO_ERROR = "/storage/emulated/0/Download/pronostico_siembra/error.txt"
 
 
 def carpeta_entrada() -> str:
@@ -57,9 +62,44 @@ def construir_contexto(forzar_memoria: bool = False, preferencias: Preferencias 
                     modo_bd=modo, carpeta_entrada=entrada)
 
 
+# Versión mínima de msgcat (sin traducciones) por si el Tcl del entorno no la trae (p. ej. Pydroid 3).
+_MSGCAT_MINIMO = r"""
+namespace eval ::msgcat {}
+proc ::msgcat::mc {src args} { if {[llength $args]} { return [format $src {*}$args] }; return $src }
+proc ::msgcat::mcmset {locale pairs} { return [expr {[llength $pairs] / 2}] }
+proc ::msgcat::mcset {locale src {trans ""}} { return $src }
+proc ::msgcat::mclocale {args} { return en }
+proc ::msgcat::mcpreferences {} { return {en} }
+proc ::msgcat::mcload {dir} { return 0 }
+proc ::msgcat::mcmax {args} { set m 0; foreach s $args { set m [expr {max($m, [string length $s])}] }; return $m }
+"""
+
+
+def asegurar_msgcat() -> None:
+    """Carga msgcat en Tcl antes de que ttkbootstrap la use; si no existe, instala una versión mínima."""
+    try:
+        from ttkbootstrap import localization
+    except ImportError:
+        return
+    original = localization.initialize_localities
+
+    def inicializar_seguro() -> None:
+        root = tkinter._default_root
+        if root is not None:
+            try:
+                root.tk.call("package", "require", "msgcat")
+            except tkinter.TclError:
+                log.warning("Tcl sin paquete msgcat; se usa una versión mínima sin traducciones.")
+                root.tk.eval(_MSGCAT_MINIMO)
+        original()
+
+    localization.initialize_localities = inicializar_seguro
+
+
 def main() -> int:
     """Arranca la aplicación."""
     configurar_logger()
+    asegurar_msgcat()
     ctx = construir_contexto()
     from src.presentacion.main_window import VentanaPrincipal  # import tardío: requiere entorno gráfico
     VentanaPrincipal(ctx).mainloop()
@@ -67,4 +107,13 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception:
+        import traceback
+        try:
+            with open(ARCHIVO_ERROR, "w", encoding="utf-8") as f:
+                traceback.print_exc(file=f)
+        except OSError:
+            pass
+        raise
