@@ -257,7 +257,9 @@ class VentanaPrincipal(ttk.Window):
                 if tipo == "listo":
                     self.resultado = carga.a_dict() if hasattr(carga, "a_dict") else carga
                     self.id_resultado = self.resultado.get("id")
-                    self.paginas.pop("resultados", None)
+                    viejo = self.paginas.pop("resultados", None)
+                    if viejo is not None:  # si no se destruye, la página anterior queda visible encima de la nueva
+                        viejo.destroy()
                     self.ir("resultados")
                     self.aviso("Listo: ya tienes tu recomendación.")
                 elif tipo == "invalido":
