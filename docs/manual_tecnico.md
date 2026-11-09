@@ -45,5 +45,11 @@ La interfaz se escribe una sola vez, pensada para escritorio. En pantallas angos
 Compatibilidad con Pydroid 3 (en `main.py`): el comentario `#Pydroid run tkinter` activa el modo gráfico. `asegurar_msgcat()` carga
 `msgcat` o una versión mínima antes de que ttkbootstrap la use. Los errores fatales se guardan en `error.txt`.
 
+## Versión web
+`web/` reutiliza `src/dominio` y la parte de `src/aplicacion` que usa la simulación. `web/empaquetar.py` los mete en `web/siembra.zip`
+junto con `web/motor.py` (el puente). En el navegador, `motor.worker.js` carga Pyodide y numpy desde jsDelivr, descomprime el zip y
+llama a `motor.simular()`, que devuelve JSON. La interfaz (`app.js`) dibuja con Chart.js. No hay servidor ni persistencia. Detalle y
+publicación en Vercel: `docs/web.md`.
+
 ## Pruebas
 `pytest --cov` (cobertura ≈ 96 %, sin el repositorio PostgreSQL). Las pruebas de interfaz necesitan pantalla (`xvfb-run`) y se omiten si no la hay. Para probar el modo celular: `SIEMBRA_MOVIL=1 xvfb-run -a -s "-screen 0 1080x2340x24" pytest tests/test_ui.py`.

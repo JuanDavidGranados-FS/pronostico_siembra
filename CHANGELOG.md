@@ -3,6 +3,20 @@
 Todos los cambios relevantes del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
+## [1.2.0] - 2026-11-09
+
+### Agregado
+- **Versión web** (`web/`) para probar la app desde el navegador, sin instalar nada:
+  - el mismo motor en Python (`src/dominio` y `src/aplicacion`) corre en el dispositivo con Pyodide, en segundo plano;
+  - pantallas Inicio, Datos y Resultados, con gráficas (Chart.js), comparación, riesgos, temporadas y asistente;
+  - diseño para celular, tema claro/oscuro automático e instalable en la pantalla de inicio;
+  - lista para publicarse en Vercel como sitio estático (`web/vercel.json`).
+- `web/empaquetar.py` genera `web/siembra.zip`, y `tests/test_web.py` verifica que esté al día.
+- Guía `docs/web.md`: publicación en Vercel y código QR.
+
+### Corregido
+- La prueba de reproducibilidad CV-03 fallaba a veces porque comparaba el nombre por defecto, que incluye la hora.
+
 ## [1.1.0] - 2026-11-09
 
 ### Agregado

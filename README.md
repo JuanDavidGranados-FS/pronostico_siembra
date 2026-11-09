@@ -3,13 +3,13 @@
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Interfaz](https://img.shields.io/badge/UI-Tkinter%20%2B%20ttkbootstrap-1f7a4d)
 ![Base de datos](https://img.shields.io/badge/BD-PostgreSQL%20(opcional)-4169E1?logo=postgresql&logoColor=white)
-![Plataformas](https://img.shields.io/badge/plataformas-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-555)
+![Plataformas](https://img.shields.io/badge/plataformas-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android%20%7C%20Web-555)
 [![Pruebas](https://github.com/JuanDavidGranados-FS/pronostico_siembra/actions/workflows/pruebas.yml/badge.svg)](https://github.com/JuanDavidGranados-FS/pronostico_siembra/actions/workflows/pruebas.yml)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 
 Aplicación que recomienda la **fecha óptima de siembra** de un cultivo y planifica varias temporadas a partir de modelos
-probabilísticos. Funciona en el PC y también en celulares Android con [Pydroid 3](docs/android_pydroid.md), con una interfaz que se
-adapta sola a la pantalla.
+probabilísticos. Funciona en el PC, en celulares Android con [Pydroid 3](docs/android_pydroid.md) y también como **página web**
+que corre en cualquier navegador, para probarla escaneando un código QR ([versión web](docs/web.md)).
 
 > Proyecto académico del curso **Formulación de Proyectos** — Ingeniería de Sistemas, Universidad ECCI (Bogotá, Colombia).
 
@@ -28,6 +28,7 @@ adapta sola a la pantalla.
 - [Capturas](#capturas)
 - [Arquitectura](#arquitectura)
 - [Estructura del proyecto](#estructura-del-proyecto)
+- [Versión web (sin instalar)](#versión-web-sin-instalar)
 - [Instalación en el PC](#instalación-en-el-pc)
 - [Uso en Android (Pydroid 3)](#uso-en-android-pydroid-3)
 - [Base de datos (opcional)](#base-de-datos-opcional)
@@ -104,7 +105,8 @@ pronostico_siembra/
 ├── requirements-android.txt    # Dependencias para Pydroid 3 (Android)
 ├── db/init.sql                 # Esquema y datos iniciales de PostgreSQL
 ├── docker/docker-compose.yml   # PostgreSQL listo para usar
-├── docs/                       # Manuales, guía de integración, guía de Android y capturas
+├── docs/                       # Manuales, guías (integración, Android, web) y capturas
+├── web/                        # Versión web: HTML/JS + motor Python en el navegador (Pyodide)
 ├── src/
 │   ├── dominio/                # Modelos matemáticos y entidades
 │   ├── aplicacion/             # Casos de uso
@@ -116,6 +118,20 @@ pronostico_siembra/
 │       └── movil.py            # Reacomodo automático en pantallas angostas
 └── tests/                      # Pruebas con pytest (dominio, aplicación e interfaz)
 ```
+
+## Versión web (sin instalar)
+
+La carpeta [`web/`](web) es una versión liviana que se abre desde el navegador. El **mismo motor en Python** corre dentro del
+dispositivo con [Pyodide](https://pyodide.org) (WebAssembly), así que no necesita servidor y ningún dato sale del celular. Se publica
+gratis en **Vercel**, y con un **código QR** cualquier persona la prueba al instante.
+
+<p align="center">
+  <img src="docs/img/web_inicio.png" alt="Versión web: inicio" width="30%">
+  &nbsp;
+  <img src="docs/img/web_resultados.png" alt="Versión web: resultados" width="30%">
+</p>
+
+Pasos para publicarla y generar el QR: **[docs/web.md](docs/web.md)**.
 
 ## Instalación en el PC
 
@@ -201,6 +217,7 @@ pyinstaller --noconfirm --onefile --windowed --name Siembra --add-data "docs:doc
 | [Manual técnico](docs/manual_tecnico.md) | Capas, flujo de simulación, persistencia y adaptación a celular. |
 | [Guía de integración](docs/integration_guide.md) | Formato JSON para conectar un simulador o mod externo. |
 | [Guía para Android](docs/android_pydroid.md) | Instalación y ejecución en Pydroid 3, con solución de problemas. |
+| [Versión web](docs/web.md) | Cómo funciona, cómo publicarla en Vercel y cómo generar el código QR. |
 | [Registro de cambios](CHANGELOG.md) | Historial de versiones. |
 
 ## Equipo
