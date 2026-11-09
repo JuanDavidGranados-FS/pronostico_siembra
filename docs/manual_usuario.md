@@ -27,5 +27,10 @@ Inicio → *Datos de un simulador (JSON)*: «Cargar JSON» o la carpeta de entra
 ## Tema
 El botón ☾/☀ cambia entre claro y oscuro (se recuerda).
 
+## En el celular
+En Android (con Pydroid 3) la app se adapta sola. El menú queda debajo del título, todo se ve en una columna y el contenido se desplaza
+deslizando el dedo. Los botones responden al soltar el dedo, y el «?» muestra su ayuda al tocarlo. Instalación y solución de problemas
+en [android_pydroid.md](android_pydroid.md).
+
 ## Aviso
 Las recomendaciones son informativas; en agricultura real consulta a un agrónomo.

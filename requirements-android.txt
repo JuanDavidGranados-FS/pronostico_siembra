@@ -1,0 +1,9 @@
+# Dependencias para Android con Pydroid 3.
+# numpy, scipy y matplotlib se instalan aparte desde el menú «Pip» de Pydroid
+# con la opción «Use prebuilt libraries repository» (vienen compiladas para Android).
+# psycopg2 y pyinstaller no aplican en el celular: la app usa almacenamiento en memoria.
+ttkbootstrap>=1.10.1
+python-dotenv>=1.0.0
+openpyxl>=3.1.0
+pytest>=7.4.0
+pytest-cov>=4.1.0

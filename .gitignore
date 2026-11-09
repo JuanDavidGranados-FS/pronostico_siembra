@@ -237,5 +237,3 @@ pronostico_siembra*.png
 .DS_Store
 Thumbs.db
 
-# Empaquetado (PyInstaller)
-*.spec
