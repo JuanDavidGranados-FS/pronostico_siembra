@@ -5,6 +5,7 @@ import tkinter as tk
 
 import ttkbootstrap as ttk
 
+from src.presentacion import tema
 from src.presentacion.paginas.comun import encabezado, numero
 from src.presentacion.widgets.base import Boton, GrupoAcordeon, PaginaScroll, Tarjeta, etiqueta
 
@@ -44,7 +45,12 @@ class PaginaSimulacion(tk.Frame):
         for i, (k, rot, ayuda, preg) in enumerate(campos):
             f = tk.Frame(c, background=p.tarjeta)
             f.grid(row=i, column=0, sticky="ew", pady=5)
-            etiqueta(f, p, rot, 11, width=26).pack(side="left")
+            if tema.MOVIL:  # celular: rótulo arriba, campo y «?» debajo
+                etiqueta(f, p, rot, 11).pack(anchor="w")
+                f = tk.Frame(f, background=p.tarjeta)
+                f.pack(anchor="w", pady=(2, 0))
+            else:
+                etiqueta(f, p, rot, 11, width=26).pack(side="left")
             v = tk.StringVar()
             self.vars[k] = v
             ttk.Entry(f, textvariable=v, width=18).pack(side="left")

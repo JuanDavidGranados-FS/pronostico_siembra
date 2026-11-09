@@ -12,6 +12,7 @@ from matplotlib.figure import Figure
 from src.aplicacion.explicador import fecha_larga
 from src.infraestructura import exportador, graficas as g
 from src.presentacion.paginas.comun import encabezado
+from src.presentacion import tema
 from src.presentacion.tema import fuente
 from src.presentacion.widgets.base import Boton, Metrica, PaginaScroll, Pastilla, Segmentado, Tarjeta, etiqueta
 
@@ -100,8 +101,8 @@ class PaginaResultados(tk.Frame):
         p, r = self.app.p, self.r
         c = self._card()
         opciones = [(n, n) for n, d in g.GRAFICAS if d is not g.dibujar_poblacion or r.get("plan_temporadas")]
-        self.fig = Figure(figsize=(8, 4.2), dpi=100)
-        lienzo = FigureCanvasTkAgg(self.fig, master=c)
+        self.fig = tema.figura(8, 4.2)
+        lienzo = tema.lienzo(self.fig, c)
         paleta = {n: d for n, d in g.GRAFICAS}
 
         def dibujar(nombre: str) -> None:

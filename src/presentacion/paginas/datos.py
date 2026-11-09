@@ -10,6 +10,7 @@ import ttkbootstrap as ttk
 from src.dominio import matrices as mx
 from src.dominio.entidades import Cultivo
 from src.presentacion.paginas.comun import encabezado, numero
+from src.presentacion import tema
 from src.presentacion.tema import fuente
 from src.presentacion.widgets.base import AyudaBoton, Boton, GrupoAcordeon, PaginaScroll, Pastilla, etiqueta
 
@@ -60,8 +61,14 @@ class PaginaDatos(tk.Frame):
     def _fila(self, c, rot: str, clave: str, valor, ayuda: str = "", ancho: int = 14, fila: int = 0, col: int = 0) -> None:
         p = self.app.p
         f = tk.Frame(c, background=p.tarjeta)
-        f.grid(row=fila, column=col, sticky="w", padx=(0, 28), pady=5)
-        etiqueta(f, p, rot, 11, width=18).pack(side="left")
+        if tema.MOVIL:  # celular: rótulo completo arriba y el campo debajo, todo en una columna
+            f.grid(row=fila * 2 + col, column=0, sticky="w", pady=5)
+            etiqueta(f, p, rot, 11).pack(anchor="w")
+            f = tk.Frame(f, background=p.tarjeta)
+            f.pack(anchor="w", pady=(2, 0))
+        else:
+            f.grid(row=fila, column=col, sticky="w", padx=(0, 28), pady=5)
+            etiqueta(f, p, rot, 11, width=18).pack(side="left")
         ttk.Entry(f, textvariable=self._var(clave, valor), width=ancho).pack(side="left")
         if ayuda:
             AyudaBoton(f, p, ayuda).pack(side="left", padx=8)
@@ -163,6 +170,7 @@ class PaginaDatos(tk.Frame):
         from src.presentacion.widgets.base import Segmentado
         Segmentado(top, p, list(CADENAS.items()), self._cambiar_cadena).pack(side="left")
         self.mk = tk.Frame(c, background=p.tarjeta)
+        self.mk._sin_reflujo = True  # es una tabla: en el celular se arrastra de lado en vez de desarmarla
         self.mk.pack(fill="x")
         self.mk_cadena = "salud"
         self.mk_entradas: Dict[str, Dict] = {}

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
+from src.presentacion import tema
 from src.presentacion.tema import fuente
 from src.presentacion.widgets.base import Boton
 
@@ -31,10 +32,13 @@ class Tour:
         pagina, titulo, texto = PASOS[self.i]
         a.ir(pagina)
         self.v = v = tk.Frame(a, background=p.tarjeta, highlightbackground=p.primario, highlightthickness=2)
-        v.place(relx=1.0, rely=1.0, anchor="se", x=-32, y=-32)
+        if tema.MOVIL:
+            v.place(relx=0.5, rely=1.0, anchor="s", y=-tema.px(12))
+        else:
+            v.place(relx=1.0, rely=1.0, anchor="se", x=-32, y=-32)
         tk.Label(v, text=f"Paso {self.i + 1} de {len(PASOS)}", font=fuente(9, "bold"), foreground=p.primario, background=p.tarjeta).pack(anchor="w", padx=18, pady=(16, 0))
         tk.Label(v, text=titulo, font=fuente(14, "bold"), foreground=p.texto, background=p.tarjeta).pack(anchor="w", padx=18)
-        tk.Label(v, text=texto, font=fuente(11), foreground=p.texto, background=p.tarjeta, wraplength=300, justify="left").pack(anchor="w", padx=18, pady=8)
+        tk.Label(v, text=texto, font=fuente(11), foreground=p.texto, background=p.tarjeta, wraplength=tema.ancho_texto(300, 80), justify="left").pack(anchor="w", padx=18, pady=8)
         fila = tk.Frame(v, background=p.tarjeta)
         fila.pack(fill="x", padx=14, pady=(0, 14))
         Boton(fila, p, "Saltar", self.cerrar, "fantasma", fondo=p.tarjeta, ancho=70).pack(side="left")

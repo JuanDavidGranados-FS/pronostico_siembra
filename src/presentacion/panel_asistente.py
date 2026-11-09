@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 import ttkbootstrap as ttk
 
 from src.aplicacion import asistente
+from src.presentacion import tema
 from src.presentacion.tema import fuente
 from src.presentacion.widgets.base import Boton
 
@@ -24,7 +25,7 @@ class PanelAsistente(tk.Frame):
         tk.Label(cab, text="✦ Asistente", font=fuente(13, "bold"), foreground=p.texto, background=p.tarjeta).pack(side="left")
         Boton(cab, p, "✕", app.alternar_asistente, "fantasma", fondo=p.tarjeta, ancho=36, tam=10).pack(side="right")
         tk.Label(self, text="Pregunta lo que quieras: respondo en pocas líneas y, si quieres, amplío.",
-                 font=fuente(10), foreground=p.suave, background=p.tarjeta, wraplength=300, justify="left").pack(anchor="w", padx=18)
+                 font=fuente(10), foreground=p.suave, background=p.tarjeta, wraplength=tema.ancho_texto(300, 80), justify="left").pack(anchor="w", padx=18)
         self.chat = tk.Text(self, wrap="word", relief="flat", background=p.tarjeta, foreground=p.texto, font=fuente(11),
                             padx=18, pady=10, state="disabled", cursor="arrow", highlightthickness=0, spacing3=6)
         self.chat.tag_configure("yo", foreground=p.primario, font=fuente(11, "bold"))

@@ -7,6 +7,7 @@ import ttkbootstrap as ttk
 
 from src.aplicacion.diagnostico import ADVERTENCIA, FALTA, OK
 from src.presentacion.paginas.comun import encabezado
+from src.presentacion import tema
 from src.presentacion.tema import fuente
 from src.presentacion.widgets.base import Boton, GrupoAcordeon, PaginaScroll, Pastilla, Tarjeta, etiqueta
 
@@ -79,9 +80,9 @@ class PaginaInicio(tk.Frame):
         v = tk.Toplevel(self)
         v.title(titulo)
         v.configure(background=p.tarjeta)
-        v.geometry("520x330")
+        tema.dialogo(v, "520x330")
         tk.Label(v, text=titulo, font=fuente(14, "bold"), foreground=p.texto, background=p.tarjeta).pack(anchor="w", padx=22, pady=(20, 8))
-        tk.Label(v, text=texto, font=fuente(11), foreground=p.texto, background=p.tarjeta, justify="left", wraplength=470).pack(anchor="w", padx=22)
+        tk.Label(v, text=texto, font=fuente(11), foreground=p.texto, background=p.tarjeta, justify="left", wraplength=tema.ancho_texto(470)).pack(anchor="w", padx=22)
         Boton(v, p, "Entendido", v.destroy, "primario", fondo=p.tarjeta).pack(anchor="e", padx=22, pady=18)
 
     def _armar_json(self) -> None:

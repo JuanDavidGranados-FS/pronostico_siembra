@@ -11,8 +11,9 @@ from matplotlib.figure import Figure
 from src.aplicacion.reutilizacion import configuracion_de_simulacion
 from src.infraestructura import graficas as g
 from src.presentacion.paginas.comun import encabezado
+from src.presentacion import tema
 from src.presentacion.tema import fuente
-from src.presentacion.widgets.base import Boton, Pastilla, Tarjeta, etiqueta
+from src.presentacion.widgets.base import Boton, PaginaScroll, Pastilla, Tarjeta, etiqueta
 
 
 class PaginaHistorial(tk.Frame):
@@ -121,24 +122,38 @@ class PaginaHistorial(tk.Frame):
         v = tk.Toplevel(self)
         v.title("Comparación")
         v.configure(background=p.fondo)
-        v.geometry("980x720")
-        tk.Label(v, text="Comparación", font=fuente(20, "bold"), foreground=p.texto, background=p.fondo).pack(anchor="w", padx=24, pady=(18, 4))
-        etiqueta(v, p, c["resumen"], 12, wraplength=900, fondo=p.fondo).pack(anchor="w", padx=24, pady=(0, 12))
-        fila = tk.Frame(v, background=p.fondo)
-        fila.pack(fill="x", padx=24)
+        tema.dialogo(v, "980x720")
+        m = tema.MOVIL
+        margen = tema.px(8) if m else 24
+        cont = v
+        if m:  # celular: pantalla completa, con desplazamiento y botón para cerrar (no hay barra de título)
+            barra = tk.Frame(v, background=p.fondo)
+            barra.pack(fill="x", padx=margen, pady=(tema.px(6), 0))
+            Boton(barra, p, "← Volver", v.destroy, "secundario", fondo=p.fondo).pack(side="left")
+            sc = PaginaScroll(v, p)
+            sc.pack(fill="both", expand=True)
+            cont = sc.interior
+        tk.Label(cont, text="Comparación", font=fuente(20, "bold"), foreground=p.texto, background=p.fondo).pack(anchor="w", padx=margen, pady=(18, 4))
+        etiqueta(cont, p, c["resumen"], 12, wraplength=tema.ancho_texto(900), fondo=p.fondo).pack(anchor="w", padx=margen, pady=(0, 12))
+        fila = tk.Frame(cont, background=p.fondo)
+        fila.pack(fill="x", padx=margen)
         for k, lado in (("a", "A"), ("b", "B")):
             s = c[k]
             t = Tarjeta(fila, p, 16)
-            t.pack(side="left", fill="both", expand=True, padx=(0 if k == "a" else 10, 0))
+            if m:
+                t.pack(fill="x", pady=(0, tema.px(8)))
+            else:
+                t.pack(side="left", fill="both", expand=True, padx=(0 if k == "a" else 10, 0))
             if c["mejor"] == k:
                 Pastilla(t.cuerpo, p, "Mejor KPI", "ok").pack(anchor="w", pady=(0, 6))
             etiqueta(t.cuerpo, p, s["nombre"], 13, "bold").pack(anchor="w")
             etiqueta(t.cuerpo, p, f"{s['cultivo']} · óptima {s['fecha_optima']}", 10, suave=True).pack(anchor="w", pady=(2, 8))
-            etiqueta(t.cuerpo, p, f"KPI {s['kpi']:.2f}   ·   éxito {s['probabilidad_exito'] * 100:.0f} %   ·   {s['p10']:.1f}–{s['p90']:.1f} t/ha", 11).pack(anchor="w")
+            etiqueta(t.cuerpo, p, f"KPI {s['kpi']:.2f}   ·   éxito {s['probabilidad_exito'] * 100:.0f} %   ·   {s['p10']:.1f}–{s['p90']:.1f} t/ha", 11,
+                     wraplength=tema.ancho_texto(900, 90) if m else 0).pack(anchor="w")
         for d in c["diferencias"]:
-            etiqueta(v, p, "•  " + d, 11, wraplength=900, fondo=p.fondo).pack(anchor="w", padx=24, pady=2)
-        fig = Figure(figsize=(8.5, 3.2), dpi=100)
+            etiqueta(cont, p, "•  " + d, 11, wraplength=tema.ancho_texto(900), fondo=p.fondo).pack(anchor="w", padx=margen, pady=2)
+        fig = tema.figura(8.5, 3.2)
         g.dibujar_comparacion(fig, c["resultado_a"], c["resultado_b"], g.TEMA_OSCURO if p.oscuro else g.TEMA_CLARO)
-        lienzo = FigureCanvasTkAgg(fig, master=v)
-        lienzo.get_tk_widget().pack(fill="both", expand=True, padx=24, pady=12)
+        lienzo = tema.lienzo(fig, cont)
+        lienzo.get_tk_widget().pack(fill="x" if m else "both", expand=not m, padx=margen, pady=12)
         lienzo.draw()

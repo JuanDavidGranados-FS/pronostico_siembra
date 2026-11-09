@@ -7,7 +7,101 @@ from typing import Callable, Dict, List, Optional
 
 import ttkbootstrap as ttk
 
-from src.presentacion.tema import Paleta, fuente
+from src.presentacion import tema
+from src.presentacion.tema import Paleta, fuente, px
+
+# ------------------------------------------------------------------ toques (celular)
+# En el celular no hay rueda del ratón: se arrastra con el dedo. Para no confundir un arrastre con un toque,
+# los controles propios se activan al SOLTAR y solo si no hubo arrastre.
+_UMBRAL_ARRASTRE = 10
+_NO_ARRASTRAR = {"TScale", "Scale", "TEntry", "Entry", "TCombobox", "TSpinbox", "TScrollbar", "Scrollbar", "Text", "Listbox"}
+_toque = {"x": 0, "y": 0, "arrastre": False, "scroll": None, "presionado": False}
+_toque_registrado = [False]
+
+
+def _scroll_de(w) -> Optional["PaginaScroll"]:
+    while w is not None:
+        if isinstance(w, PaginaScroll):
+            return w
+        w = getattr(w, "master", None)
+    return None
+
+
+def _presionar(e) -> None:
+    w = e.widget
+    _toque.update(x=e.x_root, y=e.y_root, arrastre=False, scroll=None, presionado=True)
+    if isinstance(w, str):
+        return
+    try:
+        if w.winfo_class() in _NO_ARRASTRAR:
+            return
+    except tk.TclError:
+        return
+    s = _scroll_de(w)
+    if s is not None:
+        _toque["scroll"] = s
+        s.canvas.scan_mark(e.x_root, e.y_root)
+
+
+def _mover(e) -> None:
+    s = _toque["scroll"]
+    if s is None:
+        return
+    if not _toque["arrastre"] and max(abs(e.x_root - _toque["x"]), abs(e.y_root - _toque["y"])) > px(_UMBRAL_ARRASTRE):
+        _toque["arrastre"] = True
+    if _toque["arrastre"]:
+        try:
+            s.canvas.scan_dragto(e.x_root, e.y_root, gain=1)
+        except tk.TclError:
+            _toque["scroll"] = None
+
+
+def _soltar(_e=None) -> None:
+    _toque["presionado"] = False
+
+
+def _mover_sin_boton(e) -> None:
+    """Algunas pantallas táctiles mandan el movimiento sin marcar el botón como presionado."""
+    if _toque["presionado"] and not (int(getattr(e, "state", 0) or 0) & 0x100):
+        _mover(e)
+
+
+def _rueda_movil(e) -> None:
+    """Gesto de desplazamiento que llega como rueda del ratón (p. ej. dos dedos)."""
+    w = e.widget
+    if isinstance(w, str):
+        return
+    s = _scroll_de(w)
+    if s is None:
+        return
+    if getattr(e, "num", None) == 4:
+        paso = -3
+    elif getattr(e, "num", None) == 5:
+        paso = 3
+    else:
+        paso = -3 if getattr(e, "delta", 0) > 0 else 3
+    s.canvas.yview_scroll(paso, "units")
+
+
+def registrar_toques(widget) -> None:
+    """Activa el desplazamiento con el dedo (y con gestos de rueda) en todas las páginas (una sola vez)."""
+    if _toque_registrado[0] or not tema.MOVIL:
+        return
+    _toque_registrado[0] = True
+    widget.bind_all("<ButtonPress-1>", _presionar, add="+")
+    widget.bind_all("<B1-Motion>", _mover, add="+")
+    widget.bind_all("<Motion>", _mover_sin_boton, add="+")
+    widget.bind_all("<ButtonRelease-1>", _soltar, add="+")
+    for ev in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+        widget.bind_all(ev, _rueda_movil, add="+")
+
+
+def al_tocar(widget, funcion: Callable) -> None:
+    """Enlaza un «clic»: en escritorio al presionar; en el celular al soltar y solo si no fue un arrastre."""
+    if tema.MOVIL:
+        widget.bind("<ButtonRelease-1>", lambda e: None if _toque["arrastre"] else funcion(e), add="+")
+    else:
+        widget.bind("<Button-1>", funcion, add="+")
 
 
 def _rect_redondeado(c: tk.Canvas, x1, y1, x2, y2, r, **kw):
@@ -23,14 +117,16 @@ class Boton(tk.Canvas):
                  fondo: Optional[str] = None, ancho: Optional[int] = None, tam: int = 11, **kw) -> None:
         self.p, self.texto, self.comando, self.variante = p, texto, comando, variante
         self._f = fuente(tam, "bold" if variante == "primario" else "normal")
-        w = ancho or tkfont.Font(font=self._f).measure(texto) + 36
-        super().__init__(master, width=w, height=38 if tam >= 11 else 32, highlightthickness=0, bd=0, cursor="hand2",
+        w = px(ancho) if ancho else tkfont.Font(font=self._f).measure(texto) + px(36)
+        alto = px(38 if tam >= 11 else 32)
+        super().__init__(master, width=w, height=alto, highlightthickness=0, bd=0, cursor="hand2",
                          background=fondo or master.cget("background") if "background" in master.keys() else p.fondo, **kw)
-        self._ancho, self._alto = w, 38 if tam >= 11 else 32
+        self._ancho, self._alto = w, alto
         self._activo, self._sobre = True, False
-        self.bind("<Enter>", lambda e: self._estado(sobre=True))
-        self.bind("<Leave>", lambda e: self._estado(sobre=False))
-        self.bind("<Button-1>", self._clic)
+        if not tema.MOVIL:  # en pantallas táctiles el «hover» se queda pegado
+            self.bind("<Enter>", lambda e: self._estado(sobre=True))
+            self.bind("<Leave>", lambda e: self._estado(sobre=False))
+        al_tocar(self, self._clic)
         self.bind("<Return>", self._clic)
         self.bind("<space>", self._clic)
         self.bind("<FocusIn>", lambda e: self._dibujar())
@@ -53,10 +149,11 @@ class Boton(tk.Canvas):
     def _dibujar(self) -> None:
         self.delete("all")
         fondo, texto, borde = self._colores()
-        _rect_redondeado(self, 1, 1, self._ancho - 1, self._alto - 1, 12, fill=borde, outline=borde)
-        _rect_redondeado(self, 2, 2, self._ancho - 2, self._alto - 2, 11, fill=fondo, outline=fondo)
-        if self.focus_get() is self:
-            _rect_redondeado(self, 0, 0, self._ancho, self._alto, 13, fill="", outline=self.p.primario, width=2)
+        r = px(12)
+        _rect_redondeado(self, 1, 1, self._ancho - 1, self._alto - 1, r, fill=borde, outline=borde)
+        _rect_redondeado(self, 2, 2, self._ancho - 2, self._alto - 2, r - 1, fill=fondo, outline=fondo)
+        if self.focus_get() is self and not tema.MOVIL:
+            _rect_redondeado(self, 0, 0, self._ancho, self._alto, r + 1, fill="", outline=self.p.primario, width=2)
         self.create_text(self._ancho / 2, self._alto / 2, text=self.texto, fill=texto, font=self._f)
 
     def _estado(self, sobre: bool) -> None:
@@ -97,7 +194,7 @@ class Pastilla(tk.Label):
         colores = {"ok": (p.ok, p.sobre_primario), "aviso": (p.aviso, "#1b1300"), "error": (p.error, "#ffffff"),
                    "info": (p.info, "#ffffff"), "neutro": (p.acento_suave, p.texto)}
         bg, fg = colores[tono]
-        super().__init__(master, text=texto, background=bg, foreground=fg, font=fuente(9, "bold"), padx=10, pady=3, **kw)
+        super().__init__(master, text=texto, background=bg, foreground=fg, font=fuente(9, "bold"), padx=px(10), pady=px(3), **kw)
 
 
 class Tooltip:
@@ -105,21 +202,33 @@ class Tooltip:
 
     def __init__(self, widget, texto: str, p: Paleta) -> None:
         self.widget, self.texto, self.p, self.ventana = widget, texto, p, None
+        widget.bind("<Destroy>", self._ocultar, add="+")
+        if tema.MOVIL:  # sin ratón: el globo se muestra al tocar (ver AyudaBoton) y se cierra solo
+            return
         widget.bind("<Enter>", self._mostrar, add="+")
         widget.bind("<FocusIn>", self._mostrar, add="+")
         widget.bind("<Leave>", self._ocultar, add="+")
         widget.bind("<FocusOut>", self._ocultar, add="+")
-        widget.bind("<Destroy>", self._ocultar, add="+")
 
     def _mostrar(self, _e=None) -> None:
         if self.ventana or not self.texto:
             return
-        x, y = self.widget.winfo_rootx() + 12, self.widget.winfo_rooty() + self.widget.winfo_height() + 6
+        x, y = self.widget.winfo_rootx() + px(12), self.widget.winfo_rooty() + self.widget.winfo_height() + px(6)
+        ancho = tema.ancho_texto(300)
+        if tema.MOVIL:
+            x = max(0, min(x, tema.ANCHO - ancho - px(30)))
         self.ventana = v = tk.Toplevel(self.widget)
         v.wm_overrideredirect(True)
         v.wm_geometry(f"+{x}+{y}")
-        tk.Label(v, text=self.texto, justify="left", wraplength=300, background=self.p.texto, foreground=self.p.fondo,
-                 font=fuente(10), padx=12, pady=8).pack()
+        tk.Label(v, text=self.texto, justify="left", wraplength=ancho, background=self.p.texto, foreground=self.p.fondo,
+                 font=fuente(10), padx=px(12), pady=px(8)).pack()
+        if tema.MOVIL:
+            v.bind("<ButtonRelease-1>", self._ocultar)
+            v.after(5000, self._ocultar)
+
+    def alternar(self, _e=None) -> None:
+        """Muestra u oculta el globo (para pantallas táctiles)."""
+        self._ocultar() if self.ventana else self._mostrar()
 
     def _ocultar(self, _e=None) -> None:
         if self.ventana:
@@ -133,11 +242,13 @@ class AyudaBoton(tk.Label):
     def __init__(self, master, p: Paleta, texto: str, al_preguntar: Optional[Callable[[], None]] = None, fondo: Optional[str] = None) -> None:
         super().__init__(master, text="?", font=fuente(9, "bold"), foreground=p.primario, background=p.acento_suave,
                          width=2, cursor="question_arrow", takefocus=1)
-        self.configure(padx=0, pady=0)
-        Tooltip(self, texto, p)
+        self.configure(padx=px(4) if tema.MOVIL else 0, pady=0)
+        globo = Tooltip(self, texto, p)
         if al_preguntar:
-            self.bind("<Button-1>", lambda e: al_preguntar())
+            al_tocar(self, lambda e: al_preguntar())
             self.bind("<Return>", lambda e: al_preguntar())
+        elif tema.MOVIL:
+            al_tocar(self, globo.alternar)
 
 
 class PaginaScroll(tk.Frame):
@@ -145,18 +256,39 @@ class PaginaScroll(tk.Frame):
 
     def __init__(self, master, p: Paleta, **kw) -> None:
         super().__init__(master, background=p.fondo, **kw)
-        self.canvas = tk.Canvas(self, background=p.fondo, highlightthickness=0, bd=0)
-        self.barra = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.canvas = tk.Canvas(self, background=p.fondo, highlightthickness=0, bd=0,
+                                yscrollincrement=px(20) if tema.MOVIL else 0)
+        if tema.MOVIL:  # barra gruesa para poder arrastrarla con el dedo
+            self.barra = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview, width=px(14), bd=0,
+                                      elementborderwidth=0, relief="flat", troughcolor=p.fondo, background=p.borde,
+                                      activebackground=p.suave, highlightthickness=0, jump=0)
+        else:
+            self.barra = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.barra.set)
         self.interior = tk.Frame(self.canvas, background=p.fondo)
         self._id = self.canvas.create_window((0, 0), window=self.interior, anchor="nw")
         self.canvas.pack(side="left", fill="both", expand=True)
         self.barra.pack(side="right", fill="y")
+        if tema.MOVIL:
+            registrar_toques(self)
+            self.interior.bind("<Configure>", self._ajustar_movil)
+            self.canvas.bind("<Configure>", self._ajustar_movil)
+            return
         self.interior.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
         self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfigure(self._id, width=e.width))
         for w in (self.canvas, self.interior):
             w.bind("<Enter>", self._enlazar_rueda)
             w.bind("<Leave>", self._soltar_rueda)
+
+    def _ajustar_movil(self, _e=None) -> None:
+        """Celular: el contenido ocupa el ancho visible (o más, si algo no cabe: se arrastra de lado) y avisa a la ventana."""
+        ancho = max(self.canvas.winfo_width(), self.interior.winfo_reqwidth())
+        if int(float(self.canvas.itemcget(self._id, "width") or 0)) != ancho:
+            self.canvas.itemconfigure(self._id, width=ancho)
+        self.canvas.configure(scrollregion=(0, 0, ancho, self.interior.winfo_reqheight()))
+        programar = getattr(self.winfo_toplevel(), "programar_reflujo", None)
+        if programar:
+            programar()
 
     def _enlazar_rueda(self, _e=None) -> None:
         self.canvas.bind_all("<MouseWheel>", self._rueda)
@@ -191,7 +323,7 @@ class Seccion(tk.Frame):
         self.cuerpo = tk.Frame(self, background=p.tarjeta)
         for w in (self.cab, *self.cab.winfo_children()):
             if not isinstance(w, AyudaBoton):
-                w.bind("<Button-1>", lambda e: self.alternar())
+                al_tocar(w, lambda e: self.alternar())
 
     def poner_resumen(self, texto: str) -> None:
         self.resumen.configure(text=texto)
@@ -238,9 +370,9 @@ class Segmentado(tk.Frame):
         super().__init__(master, background=p.tarjeta_2, highlightbackground=p.borde, highlightthickness=1)
         self.p, self.al_cambiar, self.botones, self.clave = p, al_cambiar, {}, None
         for clave, texto in opciones:
-            b = tk.Label(self, text=texto, font=fuente(10, "bold"), padx=14, pady=6, cursor="hand2", takefocus=1)
+            b = tk.Label(self, text=texto, font=fuente(10, "bold"), padx=px(14), pady=px(6), cursor="hand2", takefocus=1)
             b.pack(side="left", padx=3, pady=3)
-            b.bind("<Button-1>", lambda e, c=clave: self.elegir(c))
+            al_tocar(b, lambda e, c=clave: self.elegir(c))
             b.bind("<Return>", lambda e, c=clave: self.elegir(c))
             self.botones[clave] = b
         self.elegir(inicial or opciones[0][0], notificar=False)

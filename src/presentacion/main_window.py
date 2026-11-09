@@ -16,7 +16,7 @@ import ttkbootstrap as ttk
 from src.aplicacion.contexto import Contexto
 from src.aplicacion.validador import ErrorValidacion
 from src.dominio.entidades import DatosEntrada, datos_por_defecto
-from src.presentacion import tema
+from src.presentacion import movil, tema
 from src.presentacion.panel_asistente import PanelAsistente
 from src.presentacion.paginas import PAGINAS
 from src.presentacion.tour import Tour
@@ -34,7 +34,12 @@ class VentanaPrincipal(ttk.Window):
 
     def __init__(self, ctx: Contexto) -> None:
         super().__init__(title="Siembra · Pronóstico de siembra adaptable", themename="flatly", size=(1180, 800))
-        self.minsize(960, 660)
+        tema.configurar_pantalla(self)
+        if not tema.MOVIL:
+            self.minsize(960, 660)
+        self._reflujo_id = None
+        self._reflujos_seguidos = 0
+        self._ancho_visto = 0
         self.ctx = ctx
         self.datos: DatosEntrada = datos_por_defecto()
         self.resultado: Optional[Dict[str, Any]] = None
@@ -51,30 +56,39 @@ class VentanaPrincipal(ttk.Window):
         self.after(150, self._consultar_cola)
         self.after(INTERVALO_CARPETA_MS, self._vigilar_carpeta)
         self.protocol("WM_DELETE_WINDOW", self.destroy)
+        if tema.MOVIL:
+            self.bind("<Configure>", self._al_redimensionar, add="+")
         if not ctx.preferencias.obtener("tour_visto", False):
             self.after(700, lambda: Tour(self).iniciar())
 
     # ------------------------------------------------------------ construcción
     def _construir(self) -> None:
         tema.aplicar(self, self.p)
-        p = self.p
+        p, m = self.p, tema.MOVIL
+        margen = tema.px(6) if m else 24
         self.cabecera = tk.Frame(self, background=p.fondo)
-        self.cabecera.pack(fill="x", padx=24, pady=(16, 8))
+        self.cabecera.pack(fill="x", padx=margen, pady=(tema.px(6), tema.px(4)) if m else (16, 8))
         tk.Label(self.cabecera, text="✿", font=tema.fuente(20, "bold"), foreground=p.primario, background=p.fondo).pack(side="left")
         tk.Label(self.cabecera, text="Siembra", font=tema.fuente(15, "bold"), foreground=p.texto, background=p.fondo,
                  padx=8).pack(side="left", padx=(0, 18))
-        self.nav = Segmentado(self.cabecera, p, NAV, self.ir, inicial=self.pagina_actual)
-        self.nav.pack(side="left")
+        # En el celular, el menú va en su propia franja debajo (y salta de renglón si no cabe).
+        self.nav = Segmentado(self if m else self.cabecera, p, NAV, self.ir, inicial=self.pagina_actual)
+        if m:
+            self.nav.pack(fill="x", padx=margen, pady=(0, tema.px(6)))
+        else:
+            self.nav.pack(side="left")
         self.btn_asistente = Boton(self.cabecera, p, "✦ Preguntar", self.alternar_asistente, "primario", fondo=p.fondo)
         self.btn_asistente.pack(side="right")
         self.btn_tema = Boton(self.cabecera, p, "☾" if not p.oscuro else "☀", self.cambiar_tema, "fantasma", fondo=p.fondo, ancho=44)
         self.btn_tema.pack(side="right", padx=8)
-        self.semaforo = IndicadorConexion(self.cabecera, p, self.mostrar_registro)
+        self.semaforo = IndicadorConexion(self.cabecera, p, self.mostrar_registro, compacto=m)
         self.semaforo.pack(side="right", padx=8)
         cuerpo = tk.Frame(self, background=p.fondo)
         cuerpo.pack(fill="both", expand=True)
         self.zona = tk.Frame(cuerpo, background=p.fondo)
-        self.zona.pack(side="left", fill="both", expand=True, padx=(24, 12), pady=(0, 20))
+        self._pack_zona = dict(side="left", fill="both", expand=True, padx=(margen, margen) if m else (24, 12),
+                               pady=(0, tema.px(6)) if m else (0, 20))
+        self.zona.pack(**self._pack_zona)
         self.asistente = PanelAsistente(cuerpo, self)
         self.asistente_visible = False
         self.paginas: Dict[str, tk.Frame] = {}
@@ -96,6 +110,8 @@ class VentanaPrincipal(ttk.Window):
     # --------------------------------------------------------------- navegación
     def ir(self, clave: str) -> None:
         """Muestra una página; antes guarda lo que el usuario haya editado en la actual."""
+        if tema.MOVIL and self.asistente_visible:
+            self.alternar_asistente()
         self.volcar()
         self.mostrar(clave)
         if self.nav.clave != clave:
@@ -111,6 +127,33 @@ class VentanaPrincipal(ttk.Window):
         pg.pack(fill="both", expand=True)
         if hasattr(pg, "al_mostrar"):
             pg.al_mostrar()
+        self._reflujos_seguidos = 0
+        self.programar_reflujo()
+
+    # ------------------------------------------------------------------- celular
+    def programar_reflujo(self) -> None:
+        """Celular: pide reacomodar lo que no quepa a lo ancho (agrupa varias peticiones seguidas en una)."""
+        if not tema.MOVIL or self._reflujo_id is not None or self._reflujos_seguidos > 6:
+            return
+        self._reflujo_id = self.after(40, self._reflujo)
+
+    def _reflujo(self) -> None:
+        self._reflujo_id = None
+        try:
+            ancho = self.winfo_width()
+            cambio = movil.reacomodar(self.cabecera, self.cabecera.winfo_rootx(), self.cabecera.winfo_width())
+            cambio |= movil.reacomodar(self.nav, self.nav.winfo_rootx(), self.nav.winfo_width()) if self.nav.winfo_ismapped() else False
+            zona = self.asistente if self.asistente_visible else self.zona
+            cambio |= movil.reacomodar(zona, zona.winfo_rootx(), zona.winfo_width())
+            self._ancho_visto = ancho
+        except tk.TclError:
+            return
+        self._reflujos_seguidos = self._reflujos_seguidos + 1 if cambio else 0
+
+    def _al_redimensionar(self, e) -> None:
+        if e.widget is self and e.width != self._ancho_visto:
+            self._reflujos_seguidos = 0
+            self.programar_reflujo()
 
     def volcar(self) -> List[str]:
         """Pide a las páginas creadas que escriban sus campos en `self.datos`. Devuelve los errores de formato."""
@@ -129,6 +172,16 @@ class VentanaPrincipal(ttk.Window):
 
     # ----------------------------------------------------------------- asistente
     def alternar_asistente(self) -> None:
+        if tema.MOVIL:  # en el celular el asistente ocupa toda la pantalla en lugar de la página
+            if self.asistente_visible:
+                self.asistente.pack_forget()
+                self.zona.pack(**self._pack_zona)
+            else:
+                self.zona.pack_forget()
+                self.asistente.pack(fill="both", expand=True, padx=self._pack_zona["padx"], pady=self._pack_zona["pady"])
+            self.asistente_visible = not self.asistente_visible
+            self.programar_reflujo()
+            return
         if self.asistente_visible:
             self.asistente.pack_forget()
         else:
@@ -149,7 +202,7 @@ class VentanaPrincipal(ttk.Window):
         """Mensaje breve en la parte inferior (no bloquea)."""
         p = self.p
         bg, fg = {"ok": (p.primario, p.sobre_primario), "error": (p.error, "#ffffff"), "aviso": (p.aviso, "#1b1300")}[tono]
-        self.aviso_lbl.configure(text=texto, background=bg, foreground=fg)
+        self.aviso_lbl.configure(text=texto, background=bg, foreground=fg, wraplength=tema.ancho_texto(900, 60) if tema.MOVIL else 0)
         self.aviso_lbl.place(relx=0.5, rely=1.0, anchor="s", y=-22)
         self.aviso_lbl.lift()
         if getattr(self, "_aviso_id", None):
